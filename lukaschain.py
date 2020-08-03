@@ -1,43 +1,31 @@
 # lukaschain.py
 
-from Crypto.Hash import SHA256, RIPEMD
-from base58check import b58encode, b58decode
 import time
 import sys
 import logging as log
 import atexit
 import json
 import pickle
+from Crypto.Hash import SHA256
 
-from lukaschain_client import Client
 
 # LOGFILE = f'{time.strftime("%Y%m%d-%H%M%S")}.log'
 LOGFILE = 'lukaschain.log'
 
 log.basicConfig(filename=LOGFILE, format='[%(asctime)s] %(message)s', level=log.INFO)
 
-class Wallet:
-    def __init__(self, pubkey: bytes):
-        self.balance = 0
-        log.info('Creating new Wallet...')
-        self.address = self.gen_address(pubkey)
-        log.info(f'Wallet address is {self.address.decode("utf-8")}.')
-
-    def gen_address(self, pubkey: bytes):
-        log.info(f'Generating Wallet address for public key {pubkey.hex()[:4]}...')
-        pub_ripemd = RIPEMD.new(SHA256.new(pubkey).digest())
-        pub_b58 = b58encode(pub_ripemd.digest())
-        return pub_b58
-
 
 class Transaction:
-    def __init__(self, sender: Wallet, recipient: Wallet, amount: int):
+    def __init__(self, sender: bytes, recipient: bytes, amount: int, signature: bytes):
         self.sender = sender
         self.recipient = recipient
         self.amount = amount
         self.tstamp = time.time()
         self.tx_hash = self.calc_hash()
     
+    def verify(self):
+        pass
+
     def to_string(self):
         tx_string = f'{self.sender}_{self.recipient}_{self.amount}_{self.tstamp}'
         return tx_string
@@ -124,7 +112,7 @@ if __name__ == '__main__':
         with open('chain.dat', 'rb') as infile:
             log.info(f'Loading chain.dat')
             CHAIN = pickle.load(infile)
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         new_prompt = input('Chainfile not found. Initialize new chain? (y/n)')
         if new_prompt == 'y' or 'Y':
             CHAIN = Chain()
@@ -132,7 +120,3 @@ if __name__ == '__main__':
         else:
             sys.exit()
 
-
-testclient = Client()
-testwallet = Wallet(pubkey=testclient.get_pubkey()) 
-print(testwallet.address.decode('utf-8'))
