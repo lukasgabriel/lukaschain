@@ -1,6 +1,7 @@
 # lukaschain.py
 
-from Crypto.Hash import SHA256
+from Crypto.Hash import SHA256, RIPEMD
+from base58check import b58encode, b58decode
 import time
 import sys
 import logging as log
@@ -8,10 +9,29 @@ import atexit
 import json
 import pickle
 
-log.basicConfig(filename=f'{time.strftime("%Y%m%d-%H%M%S")}.log', format='[%(asctime)s] %(message)s', level=log.INFO)
+from lukaschain_client import Client
+
+# LOGFILE = f'{time.strftime("%Y%m%d-%H%M%S")}.log'
+LOGFILE = 'lukaschain.log'
+
+log.basicConfig(filename=LOGFILE, format='[%(asctime)s] %(message)s', level=log.INFO)
+
+class Wallet:
+    def __init__(self, pubkey: bytes):
+        self.balance = 0
+        log.info('Creating new Wallet...')
+        self.address = self.gen_address(pubkey)
+        log.info(f'Wallet address is {self.address.decode("utf-8")}.')
+
+    def gen_address(self, pubkey: bytes):
+        log.info(f'Generating Wallet address for public key {pubkey.hex()[:4]}...')
+        pub_ripemd = RIPEMD.new(SHA256.new(pubkey).digest())
+        pub_b58 = b58encode(pub_ripemd.digest())
+        return pub_b58
+
 
 class Transaction:
-    def __init__(self, sender: str, recipient:str, amount: int):
+    def __init__(self, sender: Wallet, recipient: Wallet, amount: int):
         self.sender = sender
         self.recipient = recipient
         self.amount = amount
@@ -19,7 +39,7 @@ class Transaction:
         self.tx_hash = self.calc_hash()
     
     def to_string(self):
-        tx_string = f'{sender}_{recipient}_{amount}_{tstamp}'
+        tx_string = f'{self.sender}_{self.recipient}_{self.amount}_{self.tstamp}'
         return tx_string
 
     def calc_hash(self):
@@ -60,7 +80,7 @@ class Block:
         return json.dumps(self.__dict__)
 
     def add_tx(self, tx):
-        tx_list.append(tx)
+        self.tx_list.append(tx)
 
 GENESIS = Block(prev_hash=None, prev_ind=0)
 
@@ -113,5 +133,6 @@ if __name__ == '__main__':
             sys.exit()
 
 
-
-    
+testclient = Client()
+testwallet = Wallet(pubkey=testclient.get_pubkey()) 
+print(testwallet.address.decode('utf-8'))
