@@ -2,3 +2,6 @@ pycrypto
 pycryptodome
 base58check
 ecdsa
+uvicorn
+pydantic
+fastapi

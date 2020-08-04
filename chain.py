@@ -13,11 +13,12 @@ chain_logger = logging.getLogger('chainLogger')
 
 
 class Transaction:
-    def __init__(self, sender: bytes, recipient: bytes, amount: int, signature: bytes):
+    def __init__(self, sender: str, recipient: str, amount: int, signature: bytes, tstamp: float):
         self.sender = sender
         self.recipient = recipient
         self.amount = amount
-        self.tstamp = time.time()
+        self.tstamp = tstamp
+        self.own_tstamp = time.time()
         self.tx_hash = self.calc_hash()
     
     def verify(self):
@@ -97,17 +98,20 @@ class Chain:
         chain_logger.info('Chain state successfully saved.')
 
 
+CHAIN = Chain()
+
 def load():
     try:
         with open('chain.dat', 'rb') as infile:
             chain_logger.info('Loading chain.dat')
-            global CHAIN
             CHAIN = pickle.load(infile)
+            return CHAIN
     except FileNotFoundError:
         new_prompt = input('Chainfile not found. Initialize new chain? (y/n)')
         if new_prompt == 'y' or 'Y':
             CHAIN = Chain()
             chain_logger.info('Initializing new chain...')
+            return CHAIN
         else:
             sys.exit()
 
