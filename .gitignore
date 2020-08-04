@@ -123,3 +123,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+chain.dat
+.vscode/settings.json
+wallet/private.pem

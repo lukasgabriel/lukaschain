@@ -2,17 +2,14 @@
 
 import time
 import sys
-import logging as log
+import logging
 import atexit
 import json
 import pickle
 from Crypto.Hash import SHA256
 
 
-# LOGFILE = f'{time.strftime("%Y%m%d-%H%M%S")}.log'
-LOGFILE = 'lukaschain.log'
-
-log.basicConfig(filename=LOGFILE, format='[%(asctime)s] %(message)s', level=log.INFO)
+chain_logger = logging.getLogger('chainLogger')
 
 
 class Transaction:
@@ -84,39 +81,38 @@ class Chain:
         new_hash = block.block_hash
         new_verify = SHA256.new(block.to_string().encode()).hexdigest()
         if not old_prev == new_prev:
-            log.info(f'Parent hash mismatch between own [{old_prev}] and new [{new_prev}].')
+            chain_logger.info(f'Parent hash mismatch between own [{old_prev}] and new [{new_prev}].')
             return False
         if not new_hash == new_verify:
-            log.info(f'Invalid hash of block [{new_hash}]; should be [{new_verify}].')
+            chain_logger.info(f'Invalid hash of block [{new_hash}]; should be [{new_verify}].')
             return False
         self.chain.append(block)
-        log.info(f'Appended block {new_hash} to chain.')
+        chain_logger.info(f'Appended block {new_hash} to chain.')
 
     def to_bytes(self):
         outfile = 'chain.dat'
-        log.info(f'Writing chain state to {outfile}.')
+        chain_logger.info(f'Writing chain state to {outfile}.')
         with open('chain.dat', 'wb') as outfile:
             pickle.dump(self, outfile)
-        log.info('Chain state successfully saved.')
+        chain_logger.info('Chain state successfully saved.')
 
 
-@atexit.register
-def on_exit():
-    CHAIN.to_bytes()
-    log.info('Exiting...')
-    log.info('----------------------------')
-
-if __name__ == '__main__':
-    log.info('Starting...')
+def load():
     try:
         with open('chain.dat', 'rb') as infile:
-            log.info(f'Loading chain.dat')
+            chain_logger.info('Loading chain.dat')
+            global CHAIN
             CHAIN = pickle.load(infile)
     except FileNotFoundError:
         new_prompt = input('Chainfile not found. Initialize new chain? (y/n)')
         if new_prompt == 'y' or 'Y':
             CHAIN = Chain()
-            log.info('Initializing new chain...')
+            chain_logger.info('Initializing new chain...')
         else:
             sys.exit()
 
+@atexit.register
+def on_exit():
+    CHAIN.to_bytes()
+    chain_logger.info('Exiting...')
+    chain_logger.info('----------------------------')

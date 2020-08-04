@@ -1,0 +1,4 @@
+pycrypto
+pycryptodome
+base58check
+ecdsa
